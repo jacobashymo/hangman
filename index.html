@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link href="hangman.css" type="text/css" media="screen" rel="stylesheet">
+    <title>Hangman</title>
+</head>
+
+<body>
+    <h1>Hangman</h1>
+
+    <form id="hangman">
+        <input type="text" maxlength="1" minlength="1" name="letter" id="letter" placeholder="Guess a letter" />
+        <input id="guess" name="guess" type="submit" value="Guess" />
+        <button id="restart" name="restart" type="button">Restart</button>
+    </form>
+    <ul id="letters"></ul>
+    <p id="livesBox"></p>
+    <p id="output" class="output"></p>
+</body>
+<script type="text/javascript">
+    const alphabet = "abcdefghijklmnopqrstuvwxyz";
+    const wordBank = ["diaphragm", "tyrannosaurus", "jazz", "appendix", "zephyr", "montecristo", "theopenustos", "elmo"];
+    let livesLeft = 8;
+    const messagesToUser = {
+            win: 'You win!',
+            lose: 'Game over!',
+            guessed: ' already guessed, please try again...',
+            validLetter: 'Please enter a letter from A-Z'
+        };
+    let output = document.getElementById("output");
+    let livesBox = document.getElementById("livesBox");
+    let guessInput = document.getElementById("letter");
+    let letters = document.getElementById("letters");
+    let guessButton = document.getElementById("guess");
+
+    let guess,
+        lettersGuessed,
+        lettersMatched,
+        currentWord,
+        numLettersMatched;
+
+    function createLettersAndSpaces() {
+        // Creates blank lines with hidden letters.
+        for (let i = 0; i < currentWord.length; i++) {
+            let letter = '<li class="letter letter' + currentWord.charAt(i).toUpperCase() + '">' + currentWord.charAt(i).toUpperCase() + '</li>';
+            letters.insertAdjacentHTML('beforeend', letter);
+        }
+    }
+        
+    function setupGame() {
+
+        // Sets lives message at start number 
+        document.getElementById("livesBox").innerHTML = 'You have ' + livesLeft + ' lives remaining';
+
+        // Internally logs which letters have been guessed both successfully and as a total. Also sets the start number at 0.
+        lettersGuessed = lettersMatched = '';
+        numLettersMatched = 0;
+
+        // Selects a random word
+        currentWord = wordBank[Math.floor(Math.random() * wordBank.length)];        
+
+        // Just shows no output underneath guess box.
+        output.innerHTML = '';
+
+        // Sets input box text to placeholder text at start.
+        document.getElementById("letter").value = '';
+
+        // Shows input box and guess button inline with the text.
+        guessInput.style.display = 'inline';
+        guessButton.style.display = 'inline';
+
+        // Shows "Current word" text
+        letters.innerHTML = '<li class="current-word">Current word:</li>';
+
+        createLettersAndSpaces();
+    }
+
+    // Shows an output at the end of the game.
+    function gameOver(win) {
+        if (win) {
+            output.innerHTML = messagesToUser.win;
+            output.classList.add('win');
+        } else {
+            output.innerHTML = messagesToUser.lose;
+            output.classList.add('error');
+        }
+
+        guessInput.style.display = guessButton.style.display = 'none';
+        guessInput.value = '';
+    }
+
+    // Shows error message.
+    function showError() {
+        output.classList.add('error');
+        output.innerHTML = messagesToUser.validLetter;
+    }
+
+    // When the window loads, run the following code.
+    window.onload = setupGame();
+
+    // Restart button
+    document.getElementById("restart").onclick = setupGame;
+
+    // Draws a blank response for a blank input.
+    guessInput.onclick = function () {
+        this.value = '';
+    };
+
+    document.getElementById('hangman').onsubmit = function (e) {
+        
+        // Prevent unwanted page refresh
+        if (e.preventDefault) {
+            e.preventDefault();
+        }
+        
+        // Reset output text.
+        output.innerHTML = '';
+        output.classList.remove('error', 'warning');
+        
+        // Get value from input text.
+        guess = guessInput.value;
+
+        // Is there content in the guess box?
+        if (guess) {
+            
+            // Checks that the guess box content is a valid letter.
+            if (alphabet.indexOf(guess) != -1) {
+                
+                // Checks that the letter hasn't been matched || guessed.
+                if ((lettersMatched && lettersMatched.indexOf(guess) != -1) || (lettersGuessed && lettersGuessed.indexOf(guess) != -1)) {
+                    output.innerHTML = '"' + guess.toUpperCase() + '"' + messagesToUser.guessed;
+                    output.classList.add("warning");
+                }
+
+                // Checks that the letter is in the word.
+                else if (currentWord.indexOf(guess) != -1) {
+                    let lettersToShow;
+                    lettersToShow = document.querySelectorAll(".letter" + guess.toUpperCase());
+                    
+                    // Shows all of the letters that were guessed (if there are more than one of a certain letter).
+                    for (let i = 0; i < lettersToShow.length; i++) {
+                        lettersToShow[i].classList.add("correct");
+                    }
+                    
+                    // Shows how many letters have been guessed correctly.
+                    for (let j = 0; j < currentWord.length; j++) {
+                        if (currentWord.charAt(j) === guess) {
+                            numLettersMatched++;
+                        }
+                    }
+                    
+                    // Checks to see if the number of letters matched is equal to the length of the word.
+                    lettersMatched += guess;
+                    if (numLettersMatched === currentWord.length) {
+                        gameOver(true);
+                    }
+                }
+                
+                // If the letter guessed is not in the word, this will subtract a life, and if lives = 0, sends the game over message.
+                else {
+                    lettersGuessed += guess;
+                    livesLeft--;
+                    livesBox.innerHTML = 'You have ' + livesLeft + ' lives remaining';
+                    if (livesLeft === 0) {
+                        gameOver();
+                    }
+                }
+            }
+
+            // If not a valid letter, this will trigger the error message.
+            else {
+                showError();
+            }
+        }
+        // If there's nothing in the guess box, the function won't return anything.
+        else {
+            showError();
+        }
+
+        // Ends the function.
+        return false;
+    };
+</script>
+
+</html>
